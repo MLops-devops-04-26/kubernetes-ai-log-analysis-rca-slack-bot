@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-web-router
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cluster-web-router
+  template:
+    metadata:
+      labels:
+        app: cluster-web-router
+    spec:
+      containers:
+      # 📊 Grafana Tunnel - Explicitly targeting the service endpoint
+      - name: grafana-tunnel
+        image: alpine/socat
+        command: ["socat", "TCP-LISTEN:3000,fork,reuseaddr", "TCP:prometheus-grafana.monitoring.svc.cluster.local:80"]
+        ports:
+        - containerPort: 3000
+
+      - name: prometheus-tunnel
+        image: alpine/socat
+        command: ["socat", "TCP-LISTEN:9090,fork,reuseaddr", "TCP:prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"]
+        ports:
+        - containerPort: 9090
+
+      - name: service1-tunnel
+        image: alpine/socat
+        command: ["socat", "TCP-LISTEN:31022,fork,reuseaddr", "TCP:service1.microservices.svc.cluster.local:8080"]
+        ports:
+        - containerPort: 31022

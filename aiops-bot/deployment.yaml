@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aiops-bot
+  namespace: aiops-bot
+  labels:
+    app: aiops-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aiops-bot
+  template:
+    metadata:
+      labels:
+        app: aiops-bot
+    spec:
+      serviceAccountName: aiops-bot
+      containers:
+      - name: aiops-bot
+        image: gvsiva2008/aiops-bot:latest
+        imagePullPolicy: Always
+        envFrom:
+        - secretRef:
+            name: slack-bot-secrets
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        ports:
+        - containerPort: 3000
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aiops-bot
+  namespace: aiops-bot
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+  selector:
+    app: aiops-bot 
